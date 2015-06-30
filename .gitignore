@@ -1,0 +1,22 @@
+syntax: glob
+Builds
+*.swp
+
+*.mode1
+*.mode1v3
+*.mode2
+*.mode2v3
+*.perspective
+*.perspectivev3
+auto-generated
+ExternalSources
+
+.DS_Store
+*.orig
+
+x64
+x86
+JuceLibraryCode
+
+tmp
+*.pkg
