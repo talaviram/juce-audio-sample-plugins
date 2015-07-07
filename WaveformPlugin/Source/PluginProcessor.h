@@ -11,14 +11,11 @@
 #ifndef PLUGINPROCESSOR_H_INCLUDED
 #define PLUGINPROCESSOR_H_INCLUDED
 
-#include "../JuceLibraryCode/JuceHeader.h"
-#include "SyncedBuffer.h"
-
 #include <stack>
 
+#include "../JuceLibraryCode/JuceHeader.h"
+
 //==============================================================================
-/**
-*/
 class WaveformPluginAudioProcessor  : public AudioProcessor,
                                       public ChangeBroadcaster
 {
