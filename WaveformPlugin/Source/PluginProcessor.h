@@ -11,7 +11,7 @@
 #ifndef PLUGINPROCESSOR_H_INCLUDED
 #define PLUGINPROCESSOR_H_INCLUDED
 
-#include <stack>
+#include <queue>
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
@@ -65,7 +65,7 @@ public:
     void getStateInformation (MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     
-    std::stack<float> waveformBuffer;
+    std::queue<float> waveformBuffer;
     int lastKnownBufferSize = 0;
     bool shouldPassToUI = false;                // tries to avoid wasting memory/cpu when UI isn't open...
     

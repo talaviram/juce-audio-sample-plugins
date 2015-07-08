@@ -33,10 +33,10 @@ public:
         clear();
     }
     
-    void onWaveformUpdate(std::stack<float>& waveformBuffer, int lastKnownBufferSize){
+    void onWaveformUpdate(std::queue<float>& waveformBuffer, int lastKnownBufferSize){
         for (int i=0; i<lastKnownBufferSize;i++){
             if (!waveformBuffer.empty()){
-                pushSample(waveformBuffer.top());
+                pushSample(waveformBuffer.front());
                 waveformBuffer.pop();
             }
         }

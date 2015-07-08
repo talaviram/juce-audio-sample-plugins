@@ -165,9 +165,9 @@ void WaveformPluginAudioProcessor::processBlock (AudioSampleBuffer& buffer, Midi
         if (shouldPassToUI){
             lastKnownBufferSize = numSamples;
             waveformBuffer.push(10.0f * inputSample); // boost the level to make it more easily visible.
-            sendChangeMessage();
         }
     }
+    sendChangeMessage();
 }
 
 //==============================================================================
