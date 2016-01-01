@@ -10,7 +10,8 @@
               pluginProducesMidiOut="0" pluginSilenceInIsSilenceOut="0" pluginEditorRequiresKeys="0"
               pluginAUExportPrefix="AudioProcessorValueTreeStateDemoAU" pluginRTASCategory=""
               aaxIdentifier="com.yourcompany.AudioProcessorValueTreeStateDemo"
-              pluginAAXCategory="AAX_ePlugInCategory_Dynamics" jucerVersion="4.0.2">
+              pluginAAXCategory="AAX_ePlugInCategory_Harmonics" jucerVersion="4.1.0"
+              pluginIsMidiEffectPlugin="0">
   <MAINGROUP id="PmL41s" name="AudioProcessorValueTreeStateDemo">
     <GROUP id="{D6570E1B-996A-EAC3-00EF-538650A39A71}" name="Source">
       <FILE id="ECYFTh" name="SimpleUI.cpp" compile="1" resource="0" file="Source/SimpleUI.cpp"/>

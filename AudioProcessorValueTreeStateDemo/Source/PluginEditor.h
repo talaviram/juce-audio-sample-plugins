@@ -56,7 +56,7 @@ private:
     ScopedPointer<Label> postfiltLabel;
     ScopedPointer<TextButton> nonlinmodeButton;
     ScopedPointer<TextButton> postfiltmodeButton;
-    ScopedPointer<GroupComponent> groupComponent;
+//    ScopedPointer<GroupComponent> groupComponent;
     ScopedPointer<TextButton> undoBtn;
     ScopedPointer<TextButton> redoBtn;
     ScopedPointer<Label> label;

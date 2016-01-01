@@ -7,7 +7,7 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 4.0.2
+  Created with Introjucer version: 4.1.0
 
   ------------------------------------------------------------------------------
 
@@ -36,6 +36,7 @@
                                                                     //[/Comments]
 */
 class SimpleUI  : public Component,
+                    ValueTree::Listener,
                   public SliderListener,
                   public ButtonListener
 {

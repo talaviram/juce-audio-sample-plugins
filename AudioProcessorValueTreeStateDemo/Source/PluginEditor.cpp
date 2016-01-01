@@ -46,7 +46,7 @@ AudioProcessorValueTreeStateDemoAudioProcessorEditor::AudioProcessorValueTreeSta
     nonlinmodeParamAttach = new juce::AudioProcessorValueTreeState::ButtonAttachment (processor.parameters, PARAM_ID_NONLIN_MODE, *nonlinmodeButton);
     
     postfiltmodeParamAttach = new juce::AudioProcessorValueTreeState::ButtonAttachment (processor.parameters, PARAM_ID_POSTFILT_MODE, *postfiltmodeButton);
-    
+//
     
     setSize (410, 300);
 }
@@ -167,9 +167,9 @@ void AudioProcessorValueTreeStateDemoAudioProcessorEditor::createUI(){
     postfiltmodeButton->setButtonText (TRANS("Even/Odd"));
     postfiltmodeButton->addListener (this);
     
-    addAndMakeVisible (groupComponent = new GroupComponent ("new group",
-                                                            TRANS("Preset Manager")));
-    groupComponent->setTextLabelPosition (Justification::centred);
+//    addAndMakeVisible (groupComponent = new GroupComponent ("new group",
+//                                                            TRANS("Preset Manager")));
+//    groupComponent->setTextLabelPosition (Justification::centred);
     
     addAndMakeVisible (undoBtn = new TextButton ("undoBtn"));
     undoBtn->setButtonText (TRANS("undo"));
@@ -217,7 +217,7 @@ void AudioProcessorValueTreeStateDemoAudioProcessorEditor::destroyUI()
     postfiltLabel = nullptr;
     nonlinmodeButton = nullptr;
     postfiltmodeButton = nullptr;
-    groupComponent = nullptr;
+//    groupComponent = nullptr;
     undoBtn = nullptr;
     redoBtn = nullptr;
     label = nullptr;
@@ -240,7 +240,7 @@ void AudioProcessorValueTreeStateDemoAudioProcessorEditor::resizeUI()
     postfiltLabel->setBounds (201, 225, 100, 24);
     nonlinmodeButton->setBounds (101, 125, 100, 100);
     postfiltmodeButton->setBounds (301, 125, 100, 100);
-    groupComponent->setBounds (0, 250, 410, 64);
+//    groupComponent->setBounds (0, 250, 410, 64);
     undoBtn->setBounds (16, 272, 40, 24);
     redoBtn->setBounds (56, 272, 40, 24);
     label->setBounds (104, 272, 104, 24);
@@ -306,12 +306,10 @@ void AudioProcessorValueTreeStateDemoAudioProcessorEditor::buttonClicked (Button
     }
     else if (buttonThatWasClicked == undoBtn)
     {
-        if (processor.parameters.undoManager->canUndo()) {
-        processor.parameters.undoManager->undo();
-        actionText->setText(processor.parameters.undoManager->getCurrentTransactionName(), dontSendNotification);
-        }
-        else{
-                    actionText->setText("can't undo", dontSendNotification);
+        if(processor.parameters.undoManager->canUndo()){
+            //        if(!processor.undoManager.undo()) DBG("undo failed!");
+            DBG(processor.parameters.undoManager->getNumActionsInCurrentTransaction());
+            processor.parameters.undoManager->undo();
         }
     }
     else if (buttonThatWasClicked == redoBtn)

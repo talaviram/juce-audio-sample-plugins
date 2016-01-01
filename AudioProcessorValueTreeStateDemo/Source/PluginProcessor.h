@@ -61,12 +61,11 @@ public:
     
     void reset() override;
     
+    UndoManager undoManager;    
     AudioProcessorValueTreeState parameters;
 
 private:
     //==============================================================================
-    
-    UndoManager undoManager;
     
     ScopedPointer<NormalisableRange<float>> sampleRateRange;
     double lastSampleRate;

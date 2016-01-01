@@ -22,7 +22,7 @@
 
 //==============================================================================
 AudioProcessorValueTreeStateDemoAudioProcessor::AudioProcessorValueTreeStateDemoAudioProcessor():
-parameters(*this,&undoManager)
+undoManager(30000,30),parameters(*this,&undoManager)
 {
     // this init all important varibales (usually required for AAX/RTAS)
     reset();
@@ -66,24 +66,55 @@ parameters(*this,&undoManager)
     };
     
     // create paramters
-    parameters.createAndAddParameter(PARAM_ID_CLIP, PARAM_NAME_CLIP, PARAM_NAME_CLIP, NormalisableRange<float>(-30.0f,0.0f), 0.0f, textValueForDecibel, nullptr);
-    parameters.createAndAddParameter(PARAM_ID_BITS, PARAM_NAME_BITS, PARAM_NAME_BITS, NormalisableRange<float>(0.4,16.0), 10.0,
-                                     textValueForBit , nullptr);
-    parameters.createAndAddParameter(PARAM_ID_SAMPLERATE, PARAM_NAME_SAMPLERATE, PARAM_NAME_SAMPLERATE, NormalisableRange<float>(0.0f,1.0f), 0.5f, textValueForSampleRate, nullptr);
-    parameters.createAndAddParameter(PARAM_ID_LEVEL,PARAM_NAME_LEVEL, PARAM_NAME_LEVEL, NormalisableRange<float>(-20.0f,20.0f), 0.0f, textValueForDecibel
-                                     , nullptr);
-    parameters.createAndAddParameter(PARAM_ID_NONLIN, PARAM_NAME_NONLIN, PARAM_NAME_NONLIN, NormalisableRange<float>(0.0f,100.0f), 16.0f, nullptr, nullptr);
-    parameters.createAndAddParameter(PARAM_ID_NONLIN_MODE, PARAM_NAME_NONLIN_MODE, PARAM_NAME_NONLIN_MODE, NormalisableRange<float>(0,1), 0.0, textValueForSampleRateMode, nullptr);
-    parameters.createAndAddParameter(PARAM_ID_POSTFILT, PARAM_NAME_POSTFILT, PARAM_NAME_POSTFILT, NormalisableRange<float>(200.0f,20000.0f), 12600.0f, textValueForPostFilt, nullptr);
-    parameters.createAndAddParameter(PARAM_ID_POSTFILT_MODE, PARAM_NAME_POSTFILT_MODE, PARAM_NAME_POSTFILT_MODE, NormalisableRange<float>(0.0f,1.0f), 0.65, textValueForPostFiltMode, nullptr);
+    
+    
+    // headroom
+    NormalisableRange<float> clipRange = NormalisableRange<float>(-30.0f,0.0f);
+    parameters.createAndAddParameter(PARAM_ID_CLIP, PARAM_NAME_CLIP, PARAM_NAME_CLIP, clipRange, clipRange.snapToLegalValue(0.0f), textValueForDecibel, nullptr);
+    
+    // quantize
+    NormalisableRange<float> bitsRange = NormalisableRange<float>(4.0f,16.0f,1.0f);
+    parameters.createAndAddParameter(PARAM_ID_BITS, PARAM_NAME_BITS, PARAM_NAME_BITS, bitsRange, bitsRange.snapToLegalValue(10.0f), textValueForBit , nullptr);
+    
+    // we should understand how can we can get samplerate
+    sampleRateRange = new NormalisableRange<float>(20.0f,44100.0f,1.0f);
+    // samplerate
+    parameters.createAndAddParameter(PARAM_ID_SAMPLERATE, PARAM_NAME_SAMPLERATE, PARAM_NAME_SAMPLERATE, *sampleRateRange, sampleRateRange->snapToLegalValue(3000.0f), textValueForSampleRate, nullptr);
+    
+    // samplerate mode
+    NormalisableRange<float> postfiltmodeRange = NormalisableRange<float>(0.0f,1.0f,1.0);
+    parameters.createAndAddParameter(PARAM_ID_POSTFILT_MODE, PARAM_NAME_POSTFILT_MODE, PARAM_NAME_POSTFILT_MODE, postfiltmodeRange, postfiltmodeRange.snapToLegalValue(0.65f), textValueForPostFiltMode, nullptr);
+    
+    
+    // post-filter
+    NormalisableRange<float> postfiltRange = NormalisableRange<float>(200.0f,20000.0f);
+    parameters.createAndAddParameter(PARAM_ID_POSTFILT, PARAM_NAME_POSTFILT, PARAM_NAME_POSTFILT, postfiltRange, postfiltRange.snapToLegalValue(12600.0f), textValueForPostFilt, nullptr);
+    
+    // non-linearity
+    NormalisableRange<float> nonlinRange = NormalisableRange<float>(0.0f,100.0f);
+    parameters.createAndAddParameter(PARAM_ID_NONLIN, PARAM_NAME_NONLIN, PARAM_NAME_NONLIN, nonlinRange, nonlinRange.snapToLegalValue(16.0f), nullptr, nullptr);
+    
+    // non-linearity mode (even/odd)
+    NormalisableRange<float> nonlinmodeRange = NormalisableRange<float>(0,1);
+    parameters.createAndAddParameter(PARAM_ID_NONLIN_MODE, PARAM_NAME_NONLIN_MODE, PARAM_NAME_NONLIN_MODE, nonlinmodeRange, nonlinmodeRange.snapToLegalValue(0), textValueForSampleRateMode, nullptr);
+    
+    // output
+    NormalisableRange<float> levelRange = NormalisableRange<float>(-20.0f,20.0f);
+    parameters.createAndAddParameter(PARAM_ID_LEVEL,PARAM_NAME_LEVEL, PARAM_NAME_LEVEL, levelRange, levelRange.snapToLegalValue(0.0f), textValueForDecibel, nullptr);
+
     
     // set-up ValueTree for saving/loading/undo
     parameters.state = ValueTree(String("ValueTreeStateDemo"));
+    parameters.undoManager->clearUndoHistory();
+    parameters.undoManager->redo();
+//    if (parameters.undoManager->canUndo()){ DBG("CAN UNDO"); }
+    
     
 }
 
 AudioProcessorValueTreeStateDemoAudioProcessor::~AudioProcessorValueTreeStateDemoAudioProcessor()
 {
+    sampleRateRange = nullptr;
 }
 
 //==============================================================================
@@ -197,7 +228,6 @@ void AudioProcessorValueTreeStateDemoAudioProcessor::releaseResources()
     // spare memory, etc.
 }
 
-
 void AudioProcessorValueTreeStateDemoAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages)
 {
     // In case we have more outputs than inputs, this code clears any output
@@ -206,114 +236,131 @@ void AudioProcessorValueTreeStateDemoAudioProcessor::processBlock (AudioSampleBu
     // I've added this to avoid people getting screaming feedback
     // when they first compile the plugin, but obviously you don't need to
     // this code if your algorithm already fills all the output channels.
-    for (int i = getNumInputChannels(); i < getNumOutputChannels(); ++i)
+    for (int i = getTotalNumInputChannels(); i < getTotalNumOutputChannels(); ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
-
-    long tn = (long) ( getSampleRate() / sampleRateRange->convertFrom0to1(*parameters.getRawParameterValue(PARAM_ID_SAMPLERATE)));
+    
+    // get parameters...
+//    fParam1 = (float)0.8; //clip
+//    fParam2 = (float)0.50; //bits
+//    fParam3 = (float)0.65; //rate
+//    fParam4 = (float)0.9; //postfilt
+//    fParam5 = (float)0.58; //non-lin
+//    fParam6 = (float)0.5; //level
+    const float clip = *parameters.getRawParameterValue(PARAM_ID_CLIP);
+    const float bits = *parameters.getRawParameterValue(PARAM_ID_BITS);
+    const float rate = *parameters.getRawParameterValue(PARAM_ID_SAMPLERATE);
+    const float postfilt = *parameters.getRawParameterValue(PARAM_ID_POSTFILT);
+    const float nonlin = *parameters.getRawParameterValue(PARAM_ID_NONLIN);
+    const long nonLinearityMode = *parameters.getRawParameterValue(PARAM_ID_NONLIN_MODE);
+    const float level = *parameters.getRawParameterValue(PARAM_ID_LEVEL);
+    const long sampleRateMode = (long)*parameters.getRawParameterValue(PARAM_ID_POSTFILT_MODE);
+    
+    long tn = (long) ( getSampleRate() / rate );
 
     if (tn < 1)
         tn = 1;
-    long sampleRateMode = (long) *parameters.getRawParameterValue(PARAM_ID_NONLIN_MODE);
+
     float mode;
     if (sampleRateMode == Parameters::kSampleRateMode_SampleAndHold)
-        mode = 1.0f;    //S&H
+        mode = 1.0f;
     else
-        mode = 0.0f;    //SAMPLE
+        mode = 0.0f;
     
     //	tcount = 1;	// XXX when does this need to happen?
-    float clp = powf(10.0f, *parameters.getRawParameterValue(PARAM_ID_CLIP)/20.0f);
-    float fo2 = filterFreq( *parameters.getRawParameterValue(PARAM_ID_POSTFILT) );
+    float clp = powf(10.0f, clip/20.0f);
+    float fo2 = filterFreq( postfilt );
     float fi2 = (1.0f-fo2); fi2 = fi2*fi2; fi2 = fi2*fi2;
-    float gi = powf(2.0f, round(*parameters.getRawParameterValue(PARAM_ID_BITS)) - 2);	// XXX why is this 2 - 14 instead of 4 - 16?
+    float gi = powf(2.0f, (long)bits - 2);	// XXX why is this 2 - 14 instead of 4 - 16?
     float go = 1.0f / gi;
     if (sampleRateMode == Parameters::kSampleRateMode_SampleAndHold)
         gi = -gi/(float)tn;
     else
         gi = -gi;
-    float ga = powf(10.0f, *parameters.getRawParameterValue(PARAM_ID_LEVEL)/20.0f); // conversion from dB
+    float ga = powf(10.0f, level/20.0f);
     float lin, lin2;
-    lin = powf(10.0f, *parameters.getRawParameterValue(PARAM_ID_NONLIN) * -0.003f);
-    long nonLinearityMode = round(*parameters.getRawParameterValue(PARAM_ID_NONLIN_MODE));
+    lin = powf(10.0f, nonlin * -0.003f);
     if (nonLinearityMode == Parameters::kNonLinearityMode_Even)
         lin2 = lin;
     else
         lin2 = 1.0f;
     
-    for (int channelNum=0; channelNum<buffer.getNumChannels(); channelNum++){
+    float b0=buf0;
+    float b1=buf1, b2=buf2, b3=buf3, b4=buf4, b5=buf5;
+    float b6=buf6, b7=buf7, b8=buf8, b9=buf9;
+    long t = tcount;
+    
+    const float* input = buffer.getReadPointer(0);
+    float* output = buffer.getWritePointer(0);
+    
+    float* output2 = nullptr;
+    if (buffer.getNumChannels()>1)
+        output2 = buffer.getWritePointer(1);
+    
+    for (int samp=0; samp < buffer.getNumSamples(); samp++)
+    {
+        b0 = input[samp] + mode * b0;
         
-        float b0=buf0;
-        float b1=buf1, b2=buf2, b3=buf3, b4=buf4, b5=buf5;
-        float b6=buf6, b7=buf7, b8=buf8, b9=buf9;
-        long t = tcount;
-        
-        const float* input = buffer.getReadPointer(channelNum);
-        float* output = buffer.getWritePointer(channelNum);
-        
-        for (int samp=0; samp < buffer.getNumSamples(); samp++)
+        if (t >= tn)
         {
-            b0 = input[samp] + mode * b0;
-            
-            if (t >= tn)
+            t = 0;
+            b5 = (float)(go * (long)(b0 * gi));
+            if (b5 > 0.0f)
             {
-                t = 0;
-                b5 = (float)(go * (long)(b0 * gi));
-                if (b5 > 0.0f)
-                {
-                    b5 = powf(b5, lin2);
-                    if (b5 > clp)
-                        b5 = clp;
-                }
-                else
-                {
-                    b5 = -powf(-b5, lin);
-                    if (b5 < -clp)
-                        b5 = -clp;
-                }
-                b0 = 0.0f;
+                b5 = powf(b5, lin2);
+                if (b5 > clp)
+                    b5 = clp;
             }
-            t++;
-            
-            b1 = fi2 * (b5 * ga) + fo2 * b1;
-            b2 = b1 + fo2 * b2;
-            b3 = b2 + fo2 * b3;
-            b4 = b3 + fo2 * b4;
-            b6 = fi2 * b4 + fo2 * b6;
-            b7 = b6 + fo2 * b7;
-            b8 = b7 + fo2 * b8;
-            b9 = b8 + fo2 * b9;
-            
-            output[samp] = b9;
+            else
+            {
+                b5 = -powf(-b5, lin);
+                if (b5 < -clp)
+                    b5 = -clp;
+            }
+            b0 = 0.0f;
         }
-        if (fabsf(b1) < 1.0e-10f)
-        {
-            buf1 = 0.0f;
-            buf2 = 0.0f;
-            buf3 = 0.0f;
-            buf4 = 0.0f;
-            buf6 = 0.0f;
-            buf7 = 0.0f;
-            buf8 = 0.0f;
-            buf9 = 0.0f;
-            buf0 = 0.0f;
-            buf5 = 0.0f;
-        }
-        else
-        {
-            buf1 = b1;
-            buf2 = b2;
-            buf3 = b3;
-            buf4 = b4;
-            buf6 = b6;
-            buf7 = b7;
-            buf8 = b8;
-            buf9 = b9;
-            buf0 = b0;
-            buf5 = b5;
-            tcount = t;
-        }
+        t++;
+        
+        b1 = fi2 * (b5 * ga) + fo2 * b1;
+        b2 = b1 + fo2 * b2;
+        b3 = b2 + fo2 * b3;
+        b4 = b3 + fo2 * b4;
+        b6 = fi2 * b4 + fo2 * b6;
+        b7 = b6 + fo2 * b7;
+        b8 = b7 + fo2 * b8;
+        b9 = b8 + fo2 * b9;
+        
+        output[samp] = b9;
+        if (output2!=nullptr) output2[samp] = b9;
+    }
+    if (fabsf(b1) < 1.0e-10f)
+    {
+        buf1 = 0.0f;
+        buf2 = 0.0f;
+        buf3 = 0.0f;
+        buf4 = 0.0f;
+        buf6 = 0.0f;
+        buf7 = 0.0f;
+        buf8 = 0.0f;
+        buf9 = 0.0f;
+        buf0 = 0.0f;
+        buf5 = 0.0f;
+    }
+    else 
+    {
+        buf1 = b1;
+        buf2 = b2;
+        buf3 = b3;
+        buf4 = b4;
+        buf6 = b6;
+        buf7 = b7;
+        buf8 = b8;
+        buf9 = b9;
+        buf0 = b0;
+        buf5 = b5;
+        tcount = t;
     }
 }
 
@@ -334,6 +381,7 @@ void AudioProcessorValueTreeStateDemoAudioProcessor::getStateInformation (Memory
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    DBG("Store XML");    
     ScopedPointer<XmlElement> xml(parameters.state.createXml());
     copyXmlToBinary (*xml, destData);
     
@@ -341,10 +389,12 @@ void AudioProcessorValueTreeStateDemoAudioProcessor::getStateInformation (Memory
 
 void AudioProcessorValueTreeStateDemoAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+    DBG("Restore XML");
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
     ScopedPointer<XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
     parameters.state = ValueTree::fromXml(*xmlState);
+    parameters.undoManager->clearUndoHistory();    
 }
 
 //==============================================================================

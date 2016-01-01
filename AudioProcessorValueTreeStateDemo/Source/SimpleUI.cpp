@@ -7,7 +7,7 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 4.0.2
+  Created with Introjucer version: 4.1.0
 
   ------------------------------------------------------------------------------
 
@@ -324,9 +324,9 @@ void SimpleUI::buttonClicked (Button* buttonThatWasClicked)
 BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="SimpleUI" componentName=""
-                 parentClasses="public Component" constructorParams="" variableInitialisers=""
-                 snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="0" initialWidth="410" initialHeight="300">
+                 parentClasses="public Component, ValueTree:Listener" constructorParams=""
+                 variableInitialisers="" snapPixels="8" snapActive="1" snapShown="1"
+                 overlayOpacity="0.330" fixedSize="0" initialWidth="410" initialHeight="300">
   <BACKGROUND backgroundColour="ff8a2be2"/>
   <SLIDER name="new slider" id="acec880678ef6e57" memberName="clipSlider"
           virtualName="" explicitFocusOrder="0" pos="0 0 100 100" min="0"
